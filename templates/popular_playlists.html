@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container">
+    <h2>Popular Playlists</h2>
+    <ul>
+        {% for playlist in playlists %}
+            <li>{{ playlist.name }} - {{ playlist.likes }} likes</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

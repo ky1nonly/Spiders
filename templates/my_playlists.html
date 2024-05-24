@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container">
+    <h2>My Playlists</h2>
+    <ul>
+        {% for playlist in playlists %}
+            <li>{{ playlist.name }}</li>
+        {% endfor %}
+    </ul>
+    <a href="#" class="btn btn-primary">Create New Playlist</a>
+</div>
+{% endblock %}

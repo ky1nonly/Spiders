@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>AI Features</h2>
+
+<h3>Image to Text</h3>
+<form method="post" enctype="multipart/form-data">
+    <input type="file" name="image">
+    <button type="submit">Upload</button>
+</form>
+{% if text %}
+    <h4>Detected Text:</h4>
+    <p>{{ text }}</p>
+{% endif %}
+
+<h3>Audio to Song Info</h3>
+<form method="post" enctype="multipart/form-data">
+    <input type="file" name="audio">
+    <button type="submit">Upload</button>
+</form>
+{% if song_info %}
+    <h4>Song Info:</h4>
+    <p>Track: {{ song_info.track }}</p>
+    <p>Artist: {{ song_info.artist }}</p>
+{% endif %}
+{% endblock %}
