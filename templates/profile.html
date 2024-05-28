@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+</head>
+<body>
+    <h1>Welcome, {{ session['username'] }}!</h1>
+    <a href="{{ url_for('logout') }}">Logout</a>
+    <button id="create-playlist">Create New Playlist</button>
+
+    <div id="results"></div>
+
+    <script>
+        document.getElementById('create-playlist').addEventListener('click', function() {
+            const method = prompt("Choose method: shazam, vision, or search");
+            let data;
+            if (method === 'shazam') {
+                // 음성 데이터를 수집하는 로직 (예: 파일 업로드)
+                data = ... // 음성 데이터
+            } else if (method === 'vision') {
+                // 이미지 데이터를 수집하는 로직 (예: 파일 업로드)
+                data = ... // 이미지 데이터
+            } else if (method === 'search') {
+                // 검색어를 입력받는 로직
+                data = prompt("Enter search query:");
+            }
+
+            fetch('/create_playlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: '{{ session["username"] }}', method: method, data: data }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (method === 'search') {
+                        const resultsDiv = document.getElementById('results');
+                        resultsDiv.innerHTML = '';
+                        data.results.forEach(result => {
+                            const div = document.createElement('div');
+                            div.innerHTML = `<p>${result.title}</p><button onclick="addTrack('${result.videoId}')">Add</button>`;
+                            resultsDiv.appendChild(div);
+                        });
+                    } else {
+                        alert('Playlist created successfully!');
+                    }
+                } else {
+                    alert('Failed to create playlist: ' + data.error);
+                }
+            });
+        });
+
+        function addTrack(videoId) {
+            fetch('/add_track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: '{{ session["username"] }}', videoId: videoId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Track added successfully!');
+                } else {
+                    alert('Failed to add track: ' + data.error);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

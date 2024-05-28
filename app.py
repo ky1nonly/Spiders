@@ -3,8 +3,12 @@ from flask_pymongo import PyMongo
 import bcrypt
 from google.cloud import vision
 import os
+from werkzeug.security import generate_password_hash, check_password_hash
 import urllib.parse  
 import shazamio
+from google.oauth2 import service_account
+import requests
+from youtubesearchpython import VideosSearch
 import asyncio
 from bson.objectid import ObjectId
 
@@ -15,6 +19,11 @@ app.secret_key = 'mysecret'
 app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/webapp")
 mongo = PyMongo(app)
 
+
+mongo = PyMongo(app)
+shazam = shazamio.Shazam()
+credentials = service_account.Credentials.from_service_account_file(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
+vision_client = vision.ImageAnnotatorClient(credentials=credentials)₩
 @app.route('/')
 def home():
     recommended_playlists = mongo.db.playlists.find().limit(5)
@@ -23,11 +32,14 @@ def home():
 
 @app.route('/profile')
 def profile():
-    return "profile"
+    if 'username' in session:
+        return f'Logged in as {session["username"]}'
+    return redirect(url_for('login'))
 
 @app.route('/logout')
-def profile():
-    return "logout"
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('home'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -56,6 +68,59 @@ def register():
         flash('That username already exists!')
     return render_template('register.html')
 
+@app.route('/create_playlist', methods=['POST'])
+def create_playlist():
+    if 'username' in session:
+        username = request.json.get('username')
+        method = request.json.get('method')
+        data = request.json.get('data')
+
+        if method == 'shazam':
+            # 샤잠 음성 인식 로직
+            # 예시: 음성 파일을 처리하여 트랙 정보를 반환
+            track = shazam_recognition(data)
+            if track:
+                mongo.db.playlists.insert_one({'username': username, 'track': track})
+                return jsonify({'success': True, 'track': track})
+            else:
+                return jsonify({'success': False, 'error': 'Shazam recognition failed'})
+
+        elif method == 'vision':
+            # 이미지 인식 로직
+            track = vision_recognition(data)
+            if track:
+                mongo.db.playlists.insert_one({'username': username, 'track': track})
+                return jsonify({'success': True, 'track': track})
+            else:
+                return jsonify({'success': False, 'error': 'Vision recognition failed'})
+
+        elif method == 'search':
+            # 검색 기능 로직
+            results = youtube_search(data)
+            return jsonify({'success': True, 'results': results})
+
+    return jsonify({'success': False}), 403
+
+def shazam_recognition(audio_data):
+    # 샤잠 API 호출하여 음성 인식
+    return shazam.recognize_song(audio_data)
+
+def vision_recognition(image_data):
+    # Google Vision API 호출하여 이미지 인식
+    image = vision.Image(content=image_data)
+    response = vision_client.text_detection(image=image)
+    texts = response.text_annotations
+    if texts:
+        return texts[0].description
+    return None
+
+def youtube_search(query):
+    # YouTube Data API를 사용하여 검색
+    videosSearch = VideosSearch(query, limit=10)
+    results = videosSearch.result()
+    return [{'title': video['title'], 'videoId': video['id']} for video in results['result']]
+
+
 @app.route('/my_playlists')
 def my_playlists():
     if 'username' in session:
@@ -78,6 +143,17 @@ def settings():
             flash('Settings updated!')
         return render_template('settings.html')
     return redirect(url_for('login'))
+
+@app.route('/add_track', methods=['POST'])
+def add_track():
+    if 'username' in session:
+        username = request.json.get('username')
+        video_id = request.json.get('videoId')
+        track = {'videoId': video_id}
+        mongo.db.playlists.insert_one({'username': username, 'track': track})
+        return jsonify({'success': True})
+    return jsonify({'success': False}), 403
+
 
 @app.route('/ai_features', methods=['GET', 'POST'])
 def ai_features():
