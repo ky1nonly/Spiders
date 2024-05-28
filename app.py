@@ -3,7 +3,7 @@ from flask_pymongo import PyMongo
 import bcrypt
 from google.cloud import vision
 import os
-import urllib.parse  # 추가
+import urllib.parse  
 import shazamio
 import asyncio
 from bson.objectid import ObjectId
@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.secret_key = 'mysecret'
 
 # MongoDB configuration
-app.config["MONGO_URI"] = "mongodb://localhost:27017/myDatabase"
+app.config["MONGO_URI"] = os.getenv("MONGO_URI", "mongodb://localhost:27017/webapp")
 mongo = PyMongo(app)
 
 @app.route('/')
@@ -20,6 +20,14 @@ def home():
     recommended_playlists = mongo.db.playlists.find().limit(5)
     popular_users = mongo.db.users.find().sort("followers", -1).limit(5)
     return render_template('home.html', recommended_playlists=recommended_playlists, popular_users=popular_users)
+
+@app.route('/profile')
+def profile():
+    return "profile"
+
+@app.route('/logout')
+def profile():
+    return "logout"
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
