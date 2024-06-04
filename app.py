@@ -23,7 +23,7 @@ mongo = PyMongo(app)
 mongo = PyMongo(app)
 shazam = shazamio.Shazam()
 credentials = service_account.Credentials.from_service_account_file(os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'))
-vision_client = vision.ImageAnnotatorClient(credentials=credentials)₩
+vision_client = vision.ImageAnnotatorClient(credentials=credentials)
 @app.route('/')
 def home():
     recommended_playlists = mongo.db.playlists.find().limit(5)
